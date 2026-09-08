@@ -1,12 +1,13 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, setAuthTokens, ApiError } from '@/lib/api';
+import { useAuth, ApiError } from '@/lib/auth-context';
 import { UserPlus, User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,8 +38,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const res = await api.register(trimmedUsername, password, trimmedEmail || undefined);
-      setAuthTokens(res.access_token, res.csrf_token);
+      await register(trimmedUsername, trimmedEmail || undefined, password);
       router.push('/');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -192,4 +192,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

@@ -1,13 +1,13 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, setAuthTokens } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { LogIn, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,8 +21,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await api.login(usernameOrEmail.trim(), password);
-      setAuthTokens(res.access_token, res.csrf_token);
+      await login(usernameOrEmail.trim(), password);
       router.push('/');
     } catch (err) {
       if (err.status === 429) {

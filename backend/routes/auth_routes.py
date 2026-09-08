@@ -13,7 +13,7 @@ from backend.auth import (
     verify_refresh_token,
     revoke_token,
     hash_password,
-    verify_password,
+    verify_password as verify_user_password,
     get_user_by_username,
 )
 from backend.logger import event_broker
@@ -204,7 +204,7 @@ async def login_user(request: Request, body: LoginRequest, response: Response):
             detail="Invalid credentials.",
         )
 
-    if not verify_password(body.password, user["hashed_password"]):
+    if not verify_user_password(body.password, user["hashed_password"]):
         event_broker.log_audit(
             event_type="auth_login",
             actor_ip=client_ip,

@@ -87,7 +87,8 @@ Supabase Postgres (Managed Database)
 3. Open [`backend/supabase_schema.sql`](file:///backend/supabase_schema.sql), paste the SQL commands, and click **Run**.
 4. Go to **Project Settings &rarr; Database &rarr; Connection String**:
    - Select **Mode: Transaction (Port 6543)**.
-   - Copy the URI (format: `postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres`).
+   - Copy the URI (format: `postgresql://postgres.[REF]:[ENCODED_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require`).
+   - URL-encode special password characters before saving it. For example, `@` becomes `%40`, `#` becomes `%23`, and `%` becomes `%25`.
 5. Set `DATABASE_URL` in your backend environment variables (on Render and local `.env`).
 
 ---
@@ -108,8 +109,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 
-# Run FastAPI server
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Run FastAPI server with the project interpreter
+.\venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### 2. Frontend Setup
