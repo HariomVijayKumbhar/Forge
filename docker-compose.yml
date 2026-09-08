@@ -1,0 +1,34 @@
+﻿services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Forge Autonomous Agent
+      - DEBUG=true
+      - ACCESS_PASSWORD=forge-dev-secret
+      - ACCESS_TOKEN_SECRET=dev-super-secret-access-token-key-change-in-prod-32chars
+      - REFRESH_TOKEN_SECRET=dev-super-secret-refresh-token-key-change-in-prod-32chars
+      - ALLOWED_ORIGIN=http://localhost:3000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LLM_PROVIDER_CHAIN=claude,gemini-flash
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
+      - ENABLE_DOCKER_SANDBOX=false
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
