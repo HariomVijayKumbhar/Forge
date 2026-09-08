@@ -17,7 +17,8 @@ from backend.auth import (
     get_user_by_username,
 )
 from backend.logger import event_broker
-from backend.db import User
+from backend.db import User, engine
+from sqlmodel import Session
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

@@ -284,7 +284,7 @@ async def get_performance_metrics(
         for error_msg, count in session.exec(error_stmt):
             if error_msg:
                 # Truncate long error messages
-                error_key = error_msg[:50] + "..." if len(error_msg) > |
+                error_key = error_msg[:50] + "..." if len(error_msg) > 50 else error_msg
 
 @router.get("/analytics/cost-estimate", response_model=List[CostEstimate])
 async def get_cost_estimates(
@@ -328,7 +328,7 @@ async def get_cost_estimates(
                 estimated_cost = estimated_tokens / 1000000 * 3.0
             elif provider == "gemini-flash":
                 # Gemini Flash pricing: ~$0.10 per million input tokens
-                estimated_tokens = len(runs) *的数量 = len(runs) * 50000
+                estimated_tokens = len(runs) * 50000
                 estimated_cost = estimated_tokens / 1000000 * 0.1
             elif provider == "openrouter":
                 # OpenRouter pricing varies, use average
