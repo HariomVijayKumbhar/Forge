@@ -8,17 +8,17 @@
 # the value in the dashboard after the first deploy (Environment tab). See the
 # values in backend/.env.production and paste them there.
 #
-# rootDir is `backend`, so build/start run from backend/ with main.py importable
-# (same layout as backend/Dockerfile: uvicorn main:app).
+# Run from the repository root so the `backend` package used by imports is
+# available to Uvicorn.
 services:
   - type: web
     name: forge-backend
     runtime: python
-    rootDir: backend
+    rootDir: .
     plan: free
     autoDeploy: true
-    buildCommand: pip install --no-cache-dir -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install --no-cache-dir -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       # --- App ---
