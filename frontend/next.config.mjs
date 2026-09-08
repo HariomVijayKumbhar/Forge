@@ -5,7 +5,9 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/:path*",
+        // Dev: proxied by the Next.js server to local FastAPI.
+        // Prod (Vercel): NEXT_PUBLIC_API_BASE_URL points at the Render backend.
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/:path*`,
       },
     ];
   },

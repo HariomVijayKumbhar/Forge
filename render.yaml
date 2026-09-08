@@ -1,0 +1,87 @@
+# ============================================================================
+# Forge Backend — Render Blueprint (render.yaml)
+# ============================================================================
+# How to use:  git push to GitHub, then in Render:
+#   Dashboard > New > Blueprint > select your repo > render.yaml is auto-detected.
+#
+# Secrets below are marked  sync: false  — Render keeps the key but YOU fill in
+# the value in the dashboard after the first deploy (Environment tab). See the
+# values in backend/.env.production and paste them there.
+#
+# rootDir is `backend`, so build/start run from backend/ with main.py importable
+# (same layout as backend/Dockerfile: uvicorn main:app).
+services:
+  - type: web
+    name: forge-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # --- App ---
+      - key: APP_NAME
+        value: Forge Autonomous Agent
+      - key: DEBUG
+        value: "false"
+
+      # --- Security / Auth ---
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "15"
+      - key: REFRESH_TOKEN_EXPIRE_HOURS
+        value: "8"
+      # CRITICAL: replace with your real Vercel frontend URL after deploy
+      - key: ALLOWED_ORIGIN
+        value: https://YOUR-APP.vercel.app
+      - key: ACCESS_PASSWORD
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+
+      # --- LLM Providers ---
+      - key: LLM_PROVIDER_CHAIN
+        value: gemini-flash,groq,cerebras,openrouter,huggingface,mistral,cohere,together,fireworks,sambanova
+      - key: CLAUDE_MODEL
+        value: claude-3-5-sonnet-20241022
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: OPENROUTER_MODEL
+        value: openai/auto
+      - key: GROQ_MODEL
+        value: groq/auto
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+      # --- Sandbox (no Docker daemon on Render -> subprocess fallback) ---
+      - key: MAX_ITERATIONS
+        value: "25"
+      - key: RUN_TIMEOUT_SECONDS
+        value: "600"
+      - key: CONSECUTIVE_FAILURES_LIMIT
+        value: "3"
+      - key: ENABLE_DOCKER_SANDBOX
+        value: "false"
+      - key: SANDBOX_DOCKER_IMAGE
+        value: python:3.12-slim
+      - key: SANDBOX_TEMP_ROOT
+        value: ./sandbox_workspaces
+
+      # --- GitHub ---
+      - key: GITHUB_TOKEN
+        sync: false
+
+      # --- Database (Supabase Postgres) ---
+      - key: DATABASE_URL
+        sync: false
+        # value from backend/.env.production:
+        # postgresql://postgres:GLdz6%405zqQ5f%3FDX@db.omwsfhoqyuvpphwrelns.supabase.co:5432/postgres

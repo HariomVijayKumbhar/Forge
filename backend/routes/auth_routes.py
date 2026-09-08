@@ -83,7 +83,7 @@ async def verify_password(request: Request, body: VerifyPasswordRequest, respons
         value=refresh_token,
         httponly=True,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/auth",
     )
@@ -92,7 +92,7 @@ async def verify_password(request: Request, body: VerifyPasswordRequest, respons
         value=csrf_token,
         httponly=False,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/",
     )
@@ -152,7 +152,7 @@ async def register_user(request: Request, body: RegisterRequest, response: Respo
         value=refresh_token,
         httponly=True,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/auth",
     )
@@ -161,7 +161,7 @@ async def register_user(request: Request, body: RegisterRequest, response: Respo
         value=csrf_token,
         httponly=False,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/",
     )
@@ -225,7 +225,7 @@ async def login_user(request: Request, body: LoginRequest, response: Response):
         value=refresh_token,
         httponly=True,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/auth",
     )
@@ -234,7 +234,7 @@ async def login_user(request: Request, body: LoginRequest, response: Response):
         value=csrf_token,
         httponly=False,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/",
     )
@@ -303,7 +303,7 @@ async def refresh_access_token(
         value=new_refresh_token,
         httponly=True,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/auth",
     )
@@ -312,7 +312,7 @@ async def refresh_access_token(
         value=new_csrf_token,
         httponly=False,
         secure=not settings.DEBUG,
-        samesite="strict",
+        samesite="none" if not settings.DEBUG else "strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_HOURS * 3600,
         path="/",
     )
