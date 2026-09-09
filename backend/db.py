@@ -80,7 +80,7 @@ class User(SQLModel, table=True):
 
 
 def get_normalized_database_url() -> str:
-    raw_url = settings.DATABASE_URL or settings.SQLITE_PATH or "sqlite:///forge.db"
+    raw_url = (settings.DATABASE_URL or settings.SQLITE_PATH or "sqlite:///forge.db").strip()
     if raw_url.startswith("postgres://"):
         return raw_url.replace("postgres://", "postgresql+psycopg2://", 1)
     if raw_url.startswith("postgresql://") and not raw_url.startswith("postgresql+"):
