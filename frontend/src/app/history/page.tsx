@@ -120,8 +120,9 @@ export default function HistoryPage() {
           />
         </div>
       ) : (
-        /* Runs Table / List */
-        <div className="glass-panel rounded-2xl overflow-hidden">
+        <>
+          {/* Runs Table / List */}
+          <div className="glass-panel rounded-2xl overflow-hidden">
           {isLoading && (
             <div className="p-12 text-center text-xs text-slate-400">Loading history records...</div>
           )}
@@ -135,17 +136,19 @@ export default function HistoryPage() {
           {!isLoading && runs.length > 0 && (
             <div className="divide-y divide-white/5">
               {runs.map((run) => (
+                <div
+                  key={run.id}
                   onClick={() => setSelectedRun(run)}
                   className="p-4 sm:p-5 hover:bg-surface-100/50 transition-colors cursor-pointer flex items-center justify-between gap-4 group"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={\`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 \${
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       run.status === "success"
                         ? "bg-emerald-500/20 text-emerald-400"
                         : run.status === "running"
                         ? "bg-cyan-500/20 text-cyan-400"
                         : "bg-rose-500/20 text-rose-400"
-                    }\`}>
+                    }`}>
                       {run.status === "success" ? (
                         <CheckCircle2 className="w-4 h-4" />
                       ) : run.status === "running" ? (
@@ -176,11 +179,10 @@ export default function HistoryPage() {
                           <Github className="w-3 h-3 text-slate-400" />
                           {run.repo_url.replace("https://github.com/", "")}
                         </span>
-                        <span>•</span>
+                        <span>&bull;</span>
                         <span>{new Date(run.created_at).toLocaleString()}</span>
                       </div>
                     </div>
-                  </div>
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -195,7 +197,8 @@ export default function HistoryPage() {
               ))}
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

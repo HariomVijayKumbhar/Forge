@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, ApiError } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context';
+import { ApiError } from '@/lib/api';
 import { UserPlus, User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 
 export default function RegisterPage() {

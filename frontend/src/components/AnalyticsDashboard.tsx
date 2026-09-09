@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { AnalyticsSummary, ProviderMetrics, PerformanceMetrics } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
+import { getAccessToken } from "@/lib/api";
 
 interface AnalyticsDashboardProps {
   onClose?: () => void;
 }
 
 export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const token = getAccessToken();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [providers, setProviders] = useState<ProviderMetrics[]>([]);
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
@@ -17,11 +19,11 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [timeRange, token]);
+  }, [timeRange, isAuthenticated, token]);
 
   async function fetchAnalytics() {
     if (!token) return;
-    
+
     setLoading(true);
     setError(null);
 

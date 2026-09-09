@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { ApiError } from '@/lib/api';
 import { LogIn, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -13,7 +14,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!usernameOrEmail.trim() || !password.trim()) return;
 
@@ -24,12 +25,16 @@ export default function LoginPage() {
       await login(usernameOrEmail.trim(), password);
       router.push('/');
     } catch (err) {
-      if (err.status === 429) {
-        setError('Rate limit exceeded. Please wait a moment.');
-      } else if (err.status === 401) {
-        setError('Invalid username or password.');
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          setError('Rate limit exceeded. Please wait a moment.');
+        } else if (err.status === 401) {
+          setError('Invalid username or password.');
+        } else {
+          setError(err.message || 'Login failed. Please try again.');
+        }
       } else {
-        setError(err.message || 'Login failed. Please try again.');
+        setError('Login failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
