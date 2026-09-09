@@ -176,7 +176,7 @@ export default function HistoryPage() {
                           <Github className="w-3 h-3 text-slate-400" />
                           {run.repo_url.replace("https://github.com/", "")}
                         </span>
-                        <span>•</span>
+                        <span>â€¢</span>
                         <span>{new Date(run.created_at).toLocaleString()}</span>
                       </div>
                     </div>
