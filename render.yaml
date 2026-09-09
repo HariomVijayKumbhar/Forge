@@ -85,7 +85,7 @@ services:
       # Supabase direct hosts db.<ref>.supabase.co are IPv6-only on free tier).
       # Get the exact host/region from Supabase Dashboard -> Connect ->
       # Session pooler, then paste below in the Render Environment tab.
-      # Example value from backend/.env.production (replace REGION with yours):
-      # postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-REGION.pooler.supabase.com:5432/postgres
+      # Verified working value from backend/.env.production:
+      # postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
       - key: DATABASE_URL
         sync: false

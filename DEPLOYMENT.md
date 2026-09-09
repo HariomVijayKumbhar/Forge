@@ -58,13 +58,10 @@ Files created for you:
    ```
    postgresql+psycopg2://postgres.<PROJECT-REF>:<ENCODED-PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres
    ```
-   For this project (replace `REGION` with yours from the dashboard):
+   For this project (region verified by live connection test):
    ```
-   postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-<REGION>.pooler.supabase.com:5432/postgres
+   postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
    ```
-   > ✅ Verified: `aws-0-us-east-1.pooler.supabase.com` is **reachable** (IPv4),
-   > but returns `tenant/user postgres.omwsfhoqyuvpphwrelns not found` — so the
-   > region must match **your** project; copy it from the dashboard string.
    Get your exact host (region) from **Supabase Dashboard → Connect →
    Session pooler**; it looks like `aws-0-<region>.pooler.supabase.com`.
    (_You cannot run the Db from Render over IPv6 — always use the pooler._)
