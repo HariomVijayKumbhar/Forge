@@ -39,8 +39,8 @@ class Settings(BaseSettings):
     LLM_PROVIDER_CHAIN: str = "claude,gemini-flash"
     CLAUDE_MODEL: str = "claude-3-5-sonnet-20241022"
     GEMINI_MODEL: str = "gemini-2.0-flash"
-    OPENROUTER_MODEL: str = "anthropic/claude-3.5-sonnet"
-    GROQ_MODEL: str = "mixtral-8x7b-32768"
+    OPENROUTER_MODEL: str = "openai/gpt-4o-mini"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Agent Limits
     MAX_ITERATIONS: int = 25

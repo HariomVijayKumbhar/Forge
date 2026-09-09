@@ -28,11 +28,11 @@ class Sandbox:
         # Ensure root sandbox directory exists
         self.root_temp_dir = Path(settings.SANDBOX_TEMP_ROOT).resolve()
         self.root_temp_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Unique isolated workspace for this specific run
         self.workspace_dir = (self.root_temp_dir / f"run_{run_id}").resolve()
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.container_id: Optional[str] = None
         self.is_docker_available: bool = False
         self._check_docker()
@@ -58,7 +58,7 @@ class Sandbox:
         """
         if not relative_path or not relative_path.strip():
             raise SandboxViolation("Path cannot be empty.")
-            
+
         # Check for forbidden traversal tokens or null bytes
         if "\0" in relative_path or ".." in relative_path:
             raise SandboxViolation(f"Access denied: Path '{relative_path}' contains forbidden traversal sequences.")
@@ -66,7 +66,7 @@ class Sandbox:
         # Clean relative path
         rel = relative_path.strip().lstrip("/\\")
         target_path = (self.workspace_dir / rel).resolve()
-        
+
         # Check canonical containment
         try:
             target_path.relative_to(self.workspace_dir)
@@ -82,7 +82,7 @@ class Sandbox:
 
         logger.info(f"Cloning {repo_url} into {self.workspace_dir}")
         cmd = ["git", "clone", "--depth", "1", repo_url, str(self.workspace_dir)]
-        
+
         try:
             result = subprocess.run(
                 cmd,
@@ -126,17 +126,31 @@ class Sandbox:
         """Writes or creates a file with strict path containment verification."""
         target = self.validate_path(relative_path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(target, "w", encoding="utf-8") as f:
             f.write(content)
-            
+
         return f"Successfully wrote {len(content)} characters to '{relative_path}'."
 
+    def list_files(self, max_files: int = 200) -> str:
+        # Return a bounded inventory of repository files for initial agent analysis."""
+        files = []
+        for file_path in self.workspace_dir.rglob("*"):
+            if not file_path.is_file():
+                continue
+            if any(part.startswith(".") or part in {"node_modules", "venv", "__pycache__"} for part in file_path.parts):
+                continue
+            files.append(file_path.relative_to(self.workspace_dir).as_posix())
+            if len(files) >= max_files:
+                break
+        files.sort()
+        suffix = "\n[Inventory truncated]" if len(files) >= max_files else ""
+        return "Repository files:\n" + "\n".join(files) + suffix
     def search_code(self, query: str, path_pattern: Optional[str] = None) -> str:
         """Searches repository code using ripgrep or Python regex scan."""
         matches = []
         pattern = path_pattern or "*"
-        
+
         for file_path in self.workspace_dir.rglob(pattern):
             if file_path.is_file() and not any(part.startswith(".") or part in ["node_modules", "venv", "__pycache__"] for part in file_path.parts):
                 try:
@@ -181,7 +195,7 @@ class Sandbox:
             "PYTHONUNBUFFERED": "1",
             "CI": "true",
         }
-        
+
         try:
             proc = subprocess.run(
                 cmd_args,

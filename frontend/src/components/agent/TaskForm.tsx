@@ -104,9 +104,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, isLoading }) => {
                 disabled={isLoading}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-100/90 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer pl-9"
               >
-                <option value="">Auto Fallback (Claude &rarr; Gemini)</option>
-                <option value="claude">Claude 3.5 Sonnet (Primary)</option>
-                <option value="gemini-flash">Gemini 2.0 Flash (Free)</option>
+                <option value="">Auto Fallback (configured chain)</option>
+                <option value="groq">Groq (fast)</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="claude">Claude 3.5 Sonnet</option>
+                <option value="gemini-flash">Gemini 2.0 Flash</option>
               </select>
               <Bot className="w-4 h-4 text-indigo-400 absolute left-3 top-3 pointer-events-none" />
               <Layers className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />

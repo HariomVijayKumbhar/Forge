@@ -42,7 +42,7 @@ async def run_agent_task(
     """
     logger.info(f"Starting agent run {run_id} for {repo_url}")
     start_time = time.time()
-    
+
     sandbox = Sandbox(run_id=run_id)
     context_store = ContextStore(
         run_id=run_id,
@@ -50,7 +50,7 @@ async def run_agent_task(
         task=task,
         max_iterations=settings.MAX_ITERATIONS,
     )
-    
+
     consecutive_failures = 0
     step_index = 1
     last_provider_used = requested_provider or "auto"
@@ -108,6 +108,24 @@ async def run_agent_task(
                 status="error",
             )
             return
+
+        # Give the model an explicit repository inventory before the first planning call.
+        # This makes repository analysis deterministic instead of relying on the model to
+        # guess that it should inspect the checkout.
+        try:
+            inventory = sandbox.list_files()
+            context_store.add_observation("repository_inventory", inventory)
+            await event_broker.log_step(
+                run_id=run_id,
+                step_index=step_index,
+                action_type="observation",
+                tool_name="repository_inventory",
+                tool_output=inventory,
+                status="ok",
+            )
+            step_index += 1
+        except Exception as e:
+            logger.warning(f"Could not inventory repository {run_id}: {e}")
 
         # Main Reasoning Loop
         while context_store.iteration < settings.MAX_ITERATIONS:

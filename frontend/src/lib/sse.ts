@@ -58,7 +58,7 @@ export function subscribeToAgentStream(
           const data: AgentStep = JSON.parse(dataLine.slice(6));
           if (data.id) lastEventId = data.id;
           listeners.onStep(data);
-          if (["finish", "error", "stopped", "stuck"].includes(data.action_type)) {
+          if (["finish", "error", "stopped", "stuck", "provider_unavailable"].includes(data.action_type)) {
             cleanup();
             listeners.onComplete();
             return;

@@ -20,7 +20,7 @@ router = APIRouter(tags=["Agent"])
 class RunAgentRequest(BaseModel):
     repo_url: str = Field(description="Public GitHub repository URL")
     task: str = Field(description="Task prompt or description")
-    provider: Optional[str] = Field(default=None, description="Optional provider override ('claude', 'gemini-flash')")
+    provider: Optional[str] = Field(default=None, description="Optional provider override ('groq', 'openrouter', 'claude', 'gemini-flash')")
 
 
 class CreatePRRequest(BaseModel):
@@ -56,7 +56,11 @@ async def start_agent_run(
     client_ip = req.client.host if req.client else "unknown"
     run_id = str(uuid.uuid4())[:8]
 
-    # Validate URL
+    # Validate URL and task before creating a background job.
+    body.repo_url = body.repo_url.strip().rstrip("/")
+    body.task = body.task.strip()
+    if not body.task:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Task instructions cannot be empty.")
     if not body.repo_url.startswith(("https://github.com/", "http://github.com/")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

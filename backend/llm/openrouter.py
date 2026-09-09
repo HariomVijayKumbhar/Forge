@@ -98,7 +98,11 @@ class OpenRouterProvider:
 
         client = AsyncOpenAI(
             api_key=self.api_key,
-            base_url="https://openrouter.io/api/v1"
+            base_url="https://openrouter.ai/api/v1",
+            default_headers={
+                "HTTP-Referer": "https://forge.dev",
+                "X-Title": "Forge Autonomous Agent",
+            },
         )
 
         try:
