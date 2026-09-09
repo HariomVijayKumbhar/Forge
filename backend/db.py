@@ -100,6 +100,8 @@ def get_db_type() -> str:
 db_url = get_normalized_database_url()
 
 if is_postgres():
+    # Explicit TLS: Supabase requires an encrypted connection, and Render's
+    # PostgreSQL clients default to "prefer", which is not guaranteed.
     engine = create_engine(
         db_url,
         echo=settings.DEBUG,
@@ -107,6 +109,7 @@ if is_postgres():
         pool_recycle=300,
         pool_size=10,
         max_overflow=20,
+        connect_args={"sslmode": "require"},
     )
 else:
     connect_args = {"check_same_thread": False}

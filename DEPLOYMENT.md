@@ -36,16 +36,38 @@ Files created for you:
 2. Open the **SQL Editor**, paste [`backend/supabase_schema.sql`](backend/supabase_schema.sql), click **Run**.
 3. Go to **Settings → Database → Connection string**:
    - Mode: **Transaction** (port `6543`) or **Session** (port `5432`).
-   - Copy the `URI` format string.
+   - Copy the **Session pooler (IPv4)** string.
 4. **Important for this project:** the password contains `@` and `?`.
    Percent-encode them so SQLAlchemy can parse the URL:
    `@` → `%40`, `?` → `%3F`.
 
    | Raw (broken for SQLAlchemy) | Encoded (use this) |
    |---|---|
-   | `postgresql://postgres:GLdz6@5zqQ5f?DX@db...:5432/postgres` | `postgresql://postgres:GLdz6%405zqQ5f%3FDX@db...supabase.co:5432/postgres` |
+   | `postgresql://postgres:GLdz6@5zqQ5f?DX@db...:5432/postgres` | `postgresql://postgres:GLdz6%405zqQ5f%3FDX@aws-0-<REGION>.pooler.supabase.com:5432/postgres` |
 
    (If your production Supabase project uses a different password, encode it the same way.)
+
+5. **⚠️ Use the SESSION POOLER host, not the direct host.** The direct host
+   `db.<project-ref>.supabase.co` is **IPv6-only** on Supabase's free tier.
+   Render's containers have **no IPv6 route**, so the API crashes at startup
+   with:
+   ```
+   sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) ... Network is unreachable
+   ```
+   The fix is the IPv4 session pooler:
+   ```
+   postgresql+psycopg2://postgres.<PROJECT-REF>:<ENCODED-PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres
+   ```
+   For this project (replace `REGION` with yours from the dashboard):
+   ```
+   postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-<REGION>.pooler.supabase.com:5432/postgres
+   ```
+   > ✅ Verified: `aws-0-us-east-1.pooler.supabase.com` is **reachable** (IPv4),
+   > but returns `tenant/user postgres.omwsfhoqyuvpphwrelns not found` — so the
+   > region must match **your** project; copy it from the dashboard string.
+   Get your exact host (region) from **Supabase Dashboard → Connect →
+   Session pooler**; it looks like `aws-0-<region>.pooler.supabase.com`.
+   (_You cannot run the Db from Render over IPv6 — always use the pooler._)
 
 ---
 
