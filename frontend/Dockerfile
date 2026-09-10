@@ -19,8 +19,8 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-
+# This app has no `public/` directory. Next.js serves the optimized build
+# from `.next`, so there is nothing else to copy into the runtime image.
 USER nextjs
 
 EXPOSE 3000
