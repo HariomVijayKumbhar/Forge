@@ -91,8 +91,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    lookup = (username or "").strip()
     with Session(engine) as session:
-        statement = select(User).where(User.username == username)
+        statement = select(User).where(User.username == lookup)
         user = session.exec(statement).first()
         if not user:
             statement = select(User).where(User.email == username)

@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str | None = None
 
     # Database Persistence (Supabase Postgres or SQLite fallback)
+    SQL_ECHO: bool = False  # Verbose SQL logging — off by default; DEBUG alone no longer floods logs
     DATABASE_URL: str = Field(
         default="sqlite:///forge.db",
         description="Database connection URL (e.g. Supabase Postgres pooled connection or SQLite file)"

@@ -108,7 +108,7 @@ if is_postgres():
     # PostgreSQL clients default to "prefer", which is not guaranteed.
     engine = create_engine(
         db_url,
-        echo=settings.DEBUG,
+        echo=settings.SQL_ECHO,
         pool_pre_ping=True,
         pool_recycle=300,
         pool_size=10,
@@ -117,7 +117,7 @@ if is_postgres():
     )
 else:
     connect_args = {"check_same_thread": False}
-    engine = create_engine(db_url, echo=settings.DEBUG, connect_args=connect_args)
+    engine = create_engine(db_url, echo=settings.SQL_ECHO, connect_args=connect_args)
 
 
 def init_db():

@@ -10,6 +10,9 @@ from backend.config import settings
 
 logger = logging.getLogger("forge.sandbox")
 
+# Whitelist permitted command runners (shared by run_command / _run_in_subprocess)
+ALLOWED_RUNNERS = ["pytest", "python", "npm", "node", "cargo", "go", "mvn", "gradle", "ruff", "flake8", "eslint", "git"]
+
 
 class SandboxViolation(Exception):
     """Raised when an operation attempts to breach the sandbox boundary."""
@@ -91,12 +94,27 @@ class Sandbox:
                 return path
         raise FileNotFoundError("Git executable not found. Please install Git for Windows.")
 
+    @staticmethod
+    def _force_rmtree(path: Path):
+        """Windows-safe rmtree: clears the read-only bit on .git files before deleting."""
+        def on_error(func, failed_path, exc_info):
+            os.chmod(failed_path, 0o777)
+            func(failed_path)
+        shutil.rmtree(path, onerror=on_error)
+
     def clone_repo(self, repo_url: str) -> str:
         """Clones a public git repository shallowly into the sandbox workspace."""
         if not repo_url.startswith(("https://github.com/", "http://github.com/")):
             raise SandboxViolation("Only public GitHub repository URLs are supported.")
 
         git_exe = self._find_git()
+        # A failed/partial previous clone leaves a non-empty dir and git refuses
+        # to clone into it — wipe it so retries work.
+        if any(self.workspace_dir.iterdir()):
+            logger.warning(f"Workspace {self.workspace_dir} not empty; clearing before clone")
+            self._force_rmtree(self.workspace_dir)
+            self.workspace_dir.mkdir(parents=True, exist_ok=True)
+
         logger.info(f"Cloning {repo_url} into {self.workspace_dir}")
         cmd = [git_exe, "clone", "--depth", "1", repo_url, str(self.workspace_dir)]
 
@@ -193,9 +211,8 @@ class Sandbox:
         Uses Docker with --network none if available; otherwise uses a scrubbed subprocess environment.
         """
         # Whitelist permitted command runners
-        allowed_runners = ["pytest", "python", "npm", "node", "cargo", "go", "mvn", "gradle", "ruff", "flake8", "eslint", "git"]
         base_cmd = cmd_args[0].lower().replace(".exe", "")
-        if base_cmd not in allowed_runners:
+        if base_cmd not in ALLOWED_RUNNERS:
             raise SandboxViolation(f"Command runner '{cmd_args[0]}' is not permitted in the sandbox.")
 
         if self.is_docker_available and settings.ENABLE_DOCKER_SANDBOX:
@@ -212,6 +229,17 @@ class Sandbox:
             "PYTHONUNBUFFERED": "1",
             "CI": "true",
         }
+
+        # Resolve runner executables (pytest, python, git...) so a missing PATH
+        # entry never surfaces as WinError 2 inside the sandbox.
+        resolved = []
+        for arg in cmd_args:
+            if arg.lower().replace(".exe", "") in ALLOWED_RUNNERS:
+                found = shutil.which(arg) or (self._find_git() if arg.lower() == "git" else None)
+                resolved.append(found if found else arg)
+            else:
+                resolved.append(arg)
+        cmd_args = resolved
 
         try:
             proc = subprocess.run(
@@ -260,9 +288,10 @@ class Sandbox:
 
     def git_diff(self) -> str:
         """Returns the current git diff of changes in the sandbox repository."""
+        git_exe = self._find_git()
         try:
             proc = subprocess.run(
-                ["git", "diff"],
+                [git_exe, "diff"],
                 cwd=str(self.workspace_dir),
                 capture_output=True,
                 text=True,
@@ -273,7 +302,7 @@ class Sandbox:
             if not diff.strip():
                 # Check untracked files
                 status_proc = subprocess.run(
-                    ["git", "status", "--short"],
+                    [git_exe, "status", "--short"],
                     cwd=str(self.workspace_dir),
                     capture_output=True,
                     text=True,
