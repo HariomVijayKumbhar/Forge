@@ -75,12 +75,24 @@ for entry in _candidate_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=resolved_origins,
-    allow_origin_regex=r"^https://.*\.vercel\.app$",
+    allow_origin_regex=r"^https://.*(\.vercel\.app|\.onrender\.com)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+
+@app.get("/", tags=["General"])
+async def root():
+    """Root endpoint verifying backend availability."""
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "online",
+        "health": "/health",
+        "ready": "/ready",
+    }
 
 
 # Global Exception Handler — safety net ensuring clean JSON responses and secret redaction

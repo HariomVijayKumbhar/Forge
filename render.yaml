@@ -1,16 +1,23 @@
 # ============================================================================
-# Forge Backend — Render Blueprint (render.yaml)
+# Forge Full Stack — Render Blueprint (render.yaml)
 # ============================================================================
-# How to use:  git push to GitHub, then in Render:
-#   Dashboard > New > Blueprint > select your repo > render.yaml is auto-detected.
+# Deploys:
+#   1. forge-backend  — Web Service (FastAPI / Python)
+#   2. forge-frontend — Static Site (Next.js Static Export on Render CDN)
 #
-# Secrets below are marked  sync: false  — Render keeps the key but YOU fill in
-# the value in the dashboard after the first deploy (Environment tab). See the
-# values in backend/.env.production and paste them there.
-#
-# Run from the repository root so the `backend` package used by imports is
-# available to Uvicorn.
+# How to use:
+#   1. Push code to GitHub.
+#   2. In Render: Dashboard > New > Blueprint > select your repo.
+#   3. Render auto-detects both services:
+#        - forge-backend (Web Service)
+#        - forge-frontend (Static Site)
+#   4. Fill in secrets marked sync: false in forge-backend > Environment tab.
+# ============================================================================
+
 services:
+  # ==========================================================================
+  # 1. Backend API (Web Service)
+  # ==========================================================================
   - type: web
     name: forge-backend
     runtime: python
@@ -32,9 +39,8 @@ services:
         value: "15"
       - key: REFRESH_TOKEN_EXPIRE_HOURS
         value: "8"
-      # CRITICAL: replace with your real Vercel frontend URL after deploy
-      - key: ALLOWED_ORIGIN
-        value: https://YOUR-APP.vercel.app
+      - key: ALLOWED_ORIGINS
+        value: https://forge-frontend.onrender.com,https://forge-phi-navy.vercel.app,http://localhost:3000
       - key: ACCESS_PASSWORD
         sync: false
       - key: ACCESS_TOKEN_SECRET
@@ -44,15 +50,15 @@ services:
 
       # --- LLM Providers ---
       - key: LLM_PROVIDER_CHAIN
-        value: gemini-flash,groq,cerebras,openrouter,huggingface,mistral,cohere,together,fireworks,sambanova
+        value: groq,openrouter
       - key: CLAUDE_MODEL
         value: claude-3-5-sonnet-20241022
       - key: GEMINI_MODEL
         value: gemini-2.0-flash
       - key: OPENROUTER_MODEL
-        value: openai/auto
+        value: openai/gpt-4o-mini
       - key: GROQ_MODEL
-        value: groq/auto
+        value: llama-3.3-70b-versatile
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: GEMINI_API_KEY
@@ -81,11 +87,27 @@ services:
         sync: false
 
       # --- Database (Supabase Postgres) ---
-      # NOTE: use the IPv4 SESSION POOLER URL (Render has no IPv6 route, and
-      # Supabase direct hosts db.<ref>.supabase.co are IPv6-only on free tier).
-      # Get the exact host/region from Supabase Dashboard -> Connect ->
-      # Session pooler, then paste below in the Render Environment tab.
-      # Verified working value from backend/.env.production:
-      # postgresql+psycopg2://postgres.omwsfhoqyuvpphwrelns:GLdz6%405zqQ5f%3FDX@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
+      # Session pooler IPv4 string from Supabase
       - key: DATABASE_URL
         sync: false
+
+  # ==========================================================================
+  # 2. Frontend Web App (Static Site)
+  # ==========================================================================
+  - type: static
+    name: forge-frontend
+    rootDir: frontend
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install && npm run build
+    staticPublishPath: out
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          type: web
+          name: forge-backend
+          envVarKey: RENDER_EXTERNAL_URL
