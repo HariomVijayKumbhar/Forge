@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_HOURS: int = 8
     ALLOWED_ORIGIN: str = Field(default="http://localhost:3000", description="Allowed CORS origin")
+    ALLOWED_ORIGINS: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000,https://forge-phi-navy.vercel.app",
+        description="Comma-separated allowed CORS origins",
+    )
 
     # LLM Providers
     ANTHROPIC_API_KEY: str | None = None

@@ -56,12 +56,28 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # 1. Security Headers Middleware (always before other custom middlewares)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 2. CORS Middleware (restricted to frontend origin)
+# 2. CORS Middleware
+_candidate_origins = [
+    settings.ALLOWED_ORIGIN,
+    getattr(settings, "ALLOWED_ORIGINS", ""),
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://forge-phi-navy.vercel.app",
+]
+resolved_origins: list[str] = []
+for entry in _candidate_origins:
+    if entry:
+        for origin in str(entry).split(","):
+            cleaned = origin.strip().rstrip("/")
+            if cleaned and cleaned not in resolved_origins:
+                resolved_origins.append(cleaned)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.ALLOWED_ORIGIN, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=resolved_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
