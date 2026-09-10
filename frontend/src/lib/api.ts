@@ -51,11 +51,20 @@ async function request<T>(
     headers["X-CSRF-Token"] = csrfToken;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include", // sends httpOnly cookies
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include", // sends httpOnly cookies
+    });
+  } catch (error) {
+    // Make a stopped/misconfigured backend distinguishable from bad credentials.
+    const message = error instanceof TypeError
+      ? `Cannot reach the Forge backend at ${API_BASE}. Start the backend or configure NEXT_PUBLIC_API_BASE_URL.`
+      : "Unable to connect to the Forge backend.";
+    throw new ApiError(0, message, { cause: error });
+  }
 
   if (response.status === 401 && !isRetry && endpoint !== "/auth/verify" && endpoint !== "/auth/refresh") {
     // Attempt token refresh
