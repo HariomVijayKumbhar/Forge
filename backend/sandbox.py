@@ -75,13 +75,30 @@ class Sandbox:
 
         return target_path
 
+    @staticmethod
+    def _find_git() -> str:
+        """Locate the git executable, falling back to common Windows install paths."""
+        git = shutil.which("git")
+        if git:
+            return git
+        candidates = [
+            r"C:\Program Files\Git\cmd\git.exe",
+            r"C:\Program Files (x86)\Git\cmd\git.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Programs\Git\cmd\git.exe"),
+        ]
+        for path in candidates:
+            if os.path.isfile(path):
+                return path
+        raise FileNotFoundError("Git executable not found. Please install Git for Windows.")
+
     def clone_repo(self, repo_url: str) -> str:
         """Clones a public git repository shallowly into the sandbox workspace."""
         if not repo_url.startswith(("https://github.com/", "http://github.com/")):
             raise SandboxViolation("Only public GitHub repository URLs are supported.")
 
+        git_exe = self._find_git()
         logger.info(f"Cloning {repo_url} into {self.workspace_dir}")
-        cmd = ["git", "clone", "--depth", "1", repo_url, str(self.workspace_dir)]
+        cmd = [git_exe, "clone", "--depth", "1", repo_url, str(self.workspace_dir)]
 
         try:
             result = subprocess.run(
