@@ -98,7 +98,7 @@ def get_daily_activity(days: int = 30) -> Dict[str, int]:
         ).order_by(
             func.date(Run.created_at).desc()
         )
-        
+
         results = session.exec(stmt).all()
         return {str(date): count for date, count in results}
 
@@ -114,44 +114,44 @@ async def get_analytics_summary(
     with Session(engine) as session:
         # Basic counts
         total_runs = session.exec(select(func.count(Run.id))).first() or 0
-        
+
         # Status distribution
         success_runs = session.exec(
             select(func.count(Run.id)).where(Run.status == "success")
         ).first() or 0
-        
+
         failed_runs = session.exec(
             select(func.count(Run.id)).where(Run.status == "error")
         ).first() or 0
-        
+
         # Average confidence
         avg_confidence = session.exec(
             select(func.avg(Run.confidence)).where(Run.confidence.isnot(None))
         ).first() or 0
-        
+
         # Total files changed
         total_files = 0
         runs = session.exec(select(Run)).all()
         for run in runs:
             total_files += get_files_changed_count(run)
-        
+
         # Provider distribution
         provider_counts = {}
         provider_stmt = select(Run.provider_used, func.count(Run.id)).group_by(Run.provider_used)
         for provider, count in session.exec(provider_stmt):
             if provider:
                 provider_counts[provider] = count
-        
+
         # Daily activity
         daily_activity = get_daily_activity(days)
-        
+
         # Total duration
         total_duration = 0
         for run in runs:
             duration = get_run_duration(run)
             if duration:
                 total_duration += duration
-        
+
         return AnalyticsSummary(
             total_runs=total_runs,
             successful_runs=success_runs,
@@ -174,14 +174,14 @@ async def get_runs_with_metrics(
         runs = session.exec(
             select(Run).order_by(Run.created_at.desc()).limit(limit).offset(offset)
         ).all()
-        
+
         metrics_list = []
         for run in runs:
             # Get step count
             step_count = session.exec(
                 select(func.count(Step.id)).where(Step.run_id == run.id)
             ).first() or 0
-            
+
             metrics_list.append(RunMetrics(
                 id=run.id,
                 repo_url=run.repo_url,
@@ -195,7 +195,7 @@ async def get_runs_with_metrics(
                 created_at=run.created_at,
                 completed_at=run.completed_at
             ))
-        
+
         return metrics_list
 
 @router.get("/analytics/providers", response_model=List[ProviderMetrics])
@@ -207,34 +207,34 @@ async def get_provider_metrics(
         providers = session.exec(
             select(Run.provider_used).distinct().where(Run.provider_used.isnot(None))
         ).all()
-        
+
         provider_metrics = []
         for provider in providers:
             if not provider:
                 continue
-                
+
             # Provider runs
             runs = session.exec(
                 select(Run).where(Run.provider_used == provider)
             ).all()
-            
+
             total_runs = len(runs)
             success_runs = sum(1 for r in runs if r.status == "success")
             success_rate = (success_runs / total_runs * 100) if total_runs > 0 else 0
-            
+
             # Average confidence
             confidences = [r.confidence for r in runs if r.confidence is not None]
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-            
+
             # Average duration
             durations = [get_run_duration(r) for r in runs]
             valid_durations = [d for d in durations if d is not None]
             avg_duration = sum(valid_durations) / len(valid_durations) if valid_durations else 0
-            
+
             # Average files changed
             files_counts = [get_files_changed_count(r) for r in runs]
             avg_files = sum(files_counts) / len(files_counts) if files_counts else 0
-            
+
             provider_metrics.append(ProviderMetrics(
                 provider=provider,
                 total_runs=total_runs,
@@ -243,7 +243,7 @@ async def get_provider_metrics(
                 average_duration_seconds=avg_duration,
                 average_files_changed=avg_files
             ))
-        
+
         return provider_metrics
 
 @router.get("/analytics/performance", response_model=PerformanceMetrics)
@@ -254,7 +254,7 @@ async def get_performance_metrics(
     """Get detailed performance metrics"""
     with Session(engine) as session:
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
-        
+
         # Tool usage frequency
         tool_counts = {}
         tool_stmt = select(
@@ -265,11 +265,11 @@ async def get_performance_metrics(
                 Step.tool_name.isnot(None)
             )
         ).group_by(Step.tool_name).order_by(func.count(Step.id).desc()).limit(10)
-        
+
         for tool, count in session.exec(tool_stmt):
             if tool:
                 tool_counts[tool] = count
-        
+
         # Error breakdown
         error_counts = {}
         error_stmt = select(
@@ -280,11 +280,44 @@ async def get_performance_metrics(
                 Run.error_message.isnot(None)
             )
         ).group_by(Run.error_message).order_by(func.count(Run.id).desc()).limit(10)
-        
+
         for error_msg, count in session.exec(error_stmt):
             if error_msg:
                 # Truncate long error messages
                 error_key = error_msg[:50] + "..." if len(error_msg) > 50 else error_msg
+                error_counts[error_key] = count
+
+        # Average step time & iterations (from runs with steps)
+        total_step_time = 0.0
+        total_steps = 0
+        total_iterations = 0
+        runs_in_range = session.exec(
+            select(Run).where(Run.created_at >= start_date)
+        ).all()
+        for run in runs_in_range:
+            steps = session.exec(
+                select(Step).where(Step.run_id == run.id).order_by(Step.timestamp)
+            ).all()
+            total_iterations += 1
+            total_steps += len(steps)
+            duration = get_run_duration(run)
+            if duration and len(steps) > 0:
+                total_step_time += duration / len(steps)
+
+        # Peak usage hours
+        peak_hours = {}
+        for run in runs_in_range:
+            hour = run.created_at.hour
+            key = str(hour)
+            peak_hours[key] = peak_hours.get(key, 0) + 1
+
+        return PerformanceMetrics(
+            average_step_time_seconds=(total_step_time / total_steps) if total_steps > 0 else 0.0,
+            average_iterations_per_run=(total_iterations / len(runs_in_range)) if runs_in_range else 0.0,
+            most_used_tools=tool_counts,
+            error_breakdown=error_counts,
+            peak_usage_hours=peak_hours,
+        )
 
 @router.get("/analytics/cost-estimate", response_model=List[CostEstimate])
 async def get_cost_estimates(
@@ -294,7 +327,7 @@ async def get_cost_estimates(
     """Get estimated costs per provider"""
     with Session(engine) as session:
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
-        
+
         providers = session.exec(
             select(Run.provider_used).distinct().where(
                 and_(
@@ -303,12 +336,12 @@ async def get_cost_estimates(
                 )
             )
         ).all()
-        
+
         estimates = []
         for provider in providers:
             if not provider:
                 continue
-                
+
             runs = session.exec(
                 select(Run).where(
                     and_(
@@ -317,11 +350,11 @@ async def get_cost_estimates(
                     )
                 )
             ).all()
-            
+
             # Simple cost estimation (adjust based on provider pricing)
             estimated_cost = 0
             estimated_tokens = 0
-            
+
             if provider == "claude":
                 # Claude 3.5 Sonnet pricing: ~$3 per million input tokens
                 estimated_tokens = len(runs) * 50000  # Rough estimate: 50k tokens per run
@@ -341,14 +374,14 @@ async def get_cost_estimates(
             else:
                 estimated_tokens = len(runs) * 50000
                 estimated_cost = estimated_tokens / 1000000 * 2.0  # Default
-            
+
             estimates.append(CostEstimate(
                 provider=provider,
                 estimated_cost_usd=round(estimated_cost, 4),
                 estimated_tokens=estimated_tokens,
                 runs_count=len(runs)
             ))
-        
+
         return estimates
 
 @router.get("/analytics/export")
@@ -360,7 +393,7 @@ async def export_analytics_data(
     with Session(engine) as session:
         runs = session.exec(select(Run)).all()
         steps = session.exec(select(Step)).all()
-        
+
         if format == "csv":
             # Create CSV data
             csv_lines = ["id,repo_url,task,status,provider_used,confidence,created_at,completed_at"]

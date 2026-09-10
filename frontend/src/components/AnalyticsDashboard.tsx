@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AnalyticsSummary, ProviderMetrics, PerformanceMetrics } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
-import { getAccessToken } from "@/lib/api";
+import { api, ApiError, getAccessToken } from "@/lib/api";
 
 interface AnalyticsDashboardProps {
   onClose?: () => void;
@@ -27,30 +27,18 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     setLoading(true);
     setError(null);
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
     try {
-      const [summaryRes, providersRes, performanceRes] = await Promise.all([
-        fetch(`${API_BASE}/analytics/summary?days=${timeRange}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/analytics/providers`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/analytics/performance?days=${timeRange}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+      const [summaryData, providersData, performanceData] = await Promise.all([
+        api.analyticsSummary(Number(timeRange)),
+        api.analyticsProviders(),
+        api.analyticsPerformance(Number(timeRange)),
       ]);
 
-      if (!summaryRes.ok || !providersRes.ok || !performanceRes.ok) {
-        throw new Error("Failed to fetch analytics");
-      }
-
-      setSummary(await summaryRes.json());
-      setProviders(await providersRes.json());
-      setPerformance(await performanceRes.json());
+      setSummary(summaryData);
+      setProviders(providersData);
+      setPerformance(performanceData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof ApiError ? err.message : "Unable to connect to the backend. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -92,8 +80,14 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md flex items-center justify-between gap-4">
           <p className="text-red-800">Error: {error}</p>
+          <button
+            onClick={fetchAnalytics}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 

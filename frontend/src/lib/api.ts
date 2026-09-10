@@ -165,4 +165,14 @@ export const api = {
 
   getRunAuditLogs: (run_id: string) =>
     request<AuditLogEntry[]>(`/runs/${run_id}/audit-logs`),
+
+  // Analytics
+  analyticsSummary: (days = 30) =>
+    request<import("./types").AnalyticsSummary>(`/analytics/summary?days=${days}`),
+
+  analyticsProviders: () =>
+    request<import("./types").ProviderMetrics[]>(`/analytics/providers`),
+
+  analyticsPerformance: (days = 30) =>
+    request<import("./types").PerformanceMetrics>(`/analytics/performance?days=${days}`),
 };
