@@ -27,15 +27,17 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     setLoading(true);
     setError(null);
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
     try {
       const [summaryRes, providersRes, performanceRes] = await Promise.all([
-        fetch(`/api/analytics/summary?days=${timeRange}`, {
+        fetch(`${API_BASE}/analytics/summary?days=${timeRange}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("/api/analytics/providers", {
+        fetch(`${API_BASE}/analytics/providers`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`/api/analytics/performance?days=${timeRange}`, {
+        fetch(`${API_BASE}/analytics/performance?days=${timeRange}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
