@@ -67,10 +67,11 @@ async def start_agent_run(
             detail="Only public GitHub repository URLs are supported.",
         )
 
-    # Create Run in DB
+    # Create Run in DB, owned by the authenticated user
     with Session(engine) as session:
         run = Run(
             id=run_id,
+            user_id=current_user.get("sub"),
             repo_url=body.repo_url,
             task=body.task,
             status="running",
@@ -112,7 +113,7 @@ async def stream_agent_events(
     """
     with Session(engine) as session:
         run = session.get(Run, run_id)
-        if not run:
+        if not run or run.user_id != current_user.get("sub"):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found.")
 
     return StreamingResponse(
@@ -164,7 +165,7 @@ async def create_pull_request_endpoint(
 
     with Session(engine) as session:
         run = session.get(Run, run_id)
-        if not run:
+        if not run or run.user_id != current_user.get("sub"):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found.")
         repo_url = run.repo_url
 
@@ -214,10 +215,16 @@ async def list_runs(
     current_user: dict = Depends(verify_token),
 ):
     """
-    Returns persistent run history from SQLite.
+    Returns persistent run history for the authenticated user.
     """
     with Session(engine) as session:
-        statement = select(Run).order_by(Run.created_at.desc()).offset(offset).limit(limit)
+        statement = (
+            select(Run)
+            .where(Run.user_id == current_user.get("sub"))
+            .order_by(Run.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
         runs = session.exec(statement).all()
         return [
             {
@@ -248,7 +255,7 @@ async def get_run_details(
     """
     with Session(engine) as session:
         run = session.get(Run, run_id)
-        if not run:
+        if not run or run.user_id != current_user.get("sub"):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found.")
         return {
             "id": run.id,
@@ -273,9 +280,12 @@ async def get_run_audit_logs(
     current_user: dict = Depends(verify_token),
 ):
     """
-    Returns the security audit trail for a specific run.
+    Returns the security audit trail for a specific run (owner only).
     """
     with Session(engine) as session:
+        run = session.get(Run, run_id)
+        if not run or run.user_id != current_user.get("sub"):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found.")
         statement = select(AuditLog).where(AuditLog.run_id == run_id).order_by(AuditLog.timestamp.asc())
         logs = session.exec(statement).all()
         return [

@@ -9,6 +9,7 @@ class Run(SQLModel, table=True):
     __tablename__ = "runs"
 
     id: str = Field(primary_key=True, index=True)
+    user_id: Optional[str] = Field(default=None, index=True)
     repo_url: str
     task: str
     status: str = Field(default="idle")
@@ -122,6 +123,23 @@ else:
 
 def init_db():
     SQLModel.metadata.create_all(engine)
+    _ensure_column(engine, "runs", "user_id", "VARCHAR(255)")
+
+
+def _ensure_column(engine, table: str, column: str, ddl_type: str):
+    """Add a column to an existing table if it does not exist yet.
+
+    SQLModel.metadata.create_all only creates missing tables, not missing
+    columns, so schema evolution needs this small migration helper.
+    """
+    from sqlalchemy import text, inspect
+
+    inspector = inspect(engine)
+    if column in [c["name"] for c in inspector.get_columns(table)]:
+        return
+    with engine.begin() as conn:
+        conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{column}" {ddl_type}'))
+        conn.execute(text(f'CREATE INDEX IF NOT EXISTS ix_runs_{column} ON "{table}" ("{column}")'))
 
 
 def get_session():

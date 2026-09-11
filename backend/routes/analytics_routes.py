@@ -68,6 +68,10 @@ class AnalyticsFilters(BaseModel):
 
 # ==================== Helper Functions ====================
 
+def _user_runs(statement, user_id: Optional[str]):
+    """Scope a Run query to a single user's runs."""
+    return statement.where(Run.user_id == user_id)
+
 def get_files_changed_count(run: Run) -> int:
     """Count files changed in a run"""
     if not run.files_changed:
@@ -84,8 +88,8 @@ def get_run_duration(run: Run) -> Optional[float]:
         return (run.completed_at - run.created_at).total_seconds()
     return None
 
-def get_daily_activity(days: int = 30) -> Dict[str, int]:
-    """Get daily run counts for the last N days"""
+def get_daily_activity(days: int = 30, user_id: Optional[str] = None) -> Dict[str, int]:
+    """Get daily run counts for the last N days (optionally scoped to a user)"""
     with Session(engine) as session:
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
         stmt = select(
@@ -93,7 +97,10 @@ def get_daily_activity(days: int = 30) -> Dict[str, int]:
             func.count(Run.id).label("count")
         ).where(
             Run.created_at >= start_date
-        ).group_by(
+        )
+        if user_id is not None:
+            stmt = stmt.where(Run.user_id == user_id)
+        stmt = stmt.group_by(
             func.date(Run.created_at)
         ).order_by(
             func.date(Run.created_at).desc()
@@ -113,37 +120,44 @@ async def get_analytics_summary(
     """Get comprehensive analytics summary"""
     with Session(engine) as session:
         # Basic counts
-        total_runs = session.exec(select(func.count(Run.id))).first() or 0
+        uid = current_user.get("sub")
+        total_runs = session.exec(
+            _user_runs(select(func.count(Run.id)), uid)
+        ).first() or 0
 
         # Status distribution
         success_runs = session.exec(
-            select(func.count(Run.id)).where(Run.status == "success")
+            _user_runs(select(func.count(Run.id)).where(Run.status == "success"), uid)
         ).first() or 0
 
         failed_runs = session.exec(
-            select(func.count(Run.id)).where(Run.status == "error")
+            _user_runs(select(func.count(Run.id)).where(Run.status == "error"), uid)
         ).first() or 0
 
         # Average confidence
         avg_confidence = session.exec(
-            select(func.avg(Run.confidence)).where(Run.confidence.isnot(None))
+            _user_runs(
+                select(func.avg(Run.confidence)).where(Run.confidence.isnot(None)), uid
+            )
         ).first() or 0
 
         # Total files changed
         total_files = 0
-        runs = session.exec(select(Run)).all()
+        runs = session.exec(_user_runs(select(Run), uid)).all()
         for run in runs:
             total_files += get_files_changed_count(run)
 
         # Provider distribution
         provider_counts = {}
-        provider_stmt = select(Run.provider_used, func.count(Run.id)).group_by(Run.provider_used)
+        provider_stmt = _user_runs(
+            select(Run.provider_used, func.count(Run.id)).group_by(Run.provider_used), uid
+        )
         for provider, count in session.exec(provider_stmt):
             if provider:
                 provider_counts[provider] = count
 
         # Daily activity
-        daily_activity = get_daily_activity(days)
+        daily_activity = get_daily_activity(days, user_id=current_user.get("sub"))
 
         # Total duration
         total_duration = 0
@@ -172,7 +186,10 @@ async def get_runs_with_metrics(
     """Get runs with enhanced metrics"""
     with Session(engine) as session:
         runs = session.exec(
-            select(Run).order_by(Run.created_at.desc()).limit(limit).offset(offset)
+            _user_runs(
+                select(Run).order_by(Run.created_at.desc()).limit(limit).offset(offset),
+                current_user.get("sub"),
+            )
         ).all()
 
         metrics_list = []
@@ -205,7 +222,10 @@ async def get_provider_metrics(
     """Get performance metrics per provider"""
     with Session(engine) as session:
         providers = session.exec(
-            select(Run.provider_used).distinct().where(Run.provider_used.isnot(None))
+            _user_runs(
+                select(Run.provider_used).distinct().where(Run.provider_used.isnot(None)),
+                current_user.get("sub"),
+            )
         ).all()
 
         provider_metrics = []
@@ -215,7 +235,10 @@ async def get_provider_metrics(
 
             # Provider runs
             runs = session.exec(
-                select(Run).where(Run.provider_used == provider)
+                _user_runs(
+                    select(Run).where(Run.provider_used == provider),
+                    current_user.get("sub"),
+                )
             ).all()
 
             total_runs = len(runs)
@@ -292,7 +315,10 @@ async def get_performance_metrics(
         total_steps = 0
         total_iterations = 0
         runs_in_range = session.exec(
-            select(Run).where(Run.created_at >= start_date)
+            _user_runs(
+                select(Run).where(Run.created_at >= start_date),
+                current_user.get("sub"),
+            )
         ).all()
         for run in runs_in_range:
             steps = session.exec(
@@ -329,11 +355,14 @@ async def get_cost_estimates(
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         providers = session.exec(
-            select(Run.provider_used).distinct().where(
-                and_(
-                    Run.provider_used.isnot(None),
-                    Run.created_at >= start_date
-                )
+            _user_runs(
+                select(Run.provider_used).distinct().where(
+                    and_(
+                        Run.provider_used.isnot(None),
+                        Run.created_at >= start_date
+                    )
+                ),
+                current_user.get("sub"),
             )
         ).all()
 
@@ -343,11 +372,14 @@ async def get_cost_estimates(
                 continue
 
             runs = session.exec(
-                select(Run).where(
-                    and_(
-                        Run.provider_used == provider,
-                        Run.created_at >= start_date
-                    )
+                _user_runs(
+                    select(Run).where(
+                        and_(
+                            Run.provider_used == provider,
+                            Run.created_at >= start_date
+                        )
+                    ),
+                    current_user.get("sub"),
                 )
             ).all()
 
@@ -391,8 +423,12 @@ async def export_analytics_data(
 ):
     """Export analytics data in various formats"""
     with Session(engine) as session:
-        runs = session.exec(select(Run)).all()
-        steps = session.exec(select(Step)).all()
+        uid = current_user.get("sub")
+        user_run_ids = session.exec(
+            _user_runs(select(Run.id), uid)
+        ).all()
+        runs = session.exec(select(Run).where(Run.id.in_(user_run_ids))).all()
+        steps = session.exec(select(Step).where(Step.run_id.in_(user_run_ids))).all()
 
         if format == "csv":
             # Create CSV data
