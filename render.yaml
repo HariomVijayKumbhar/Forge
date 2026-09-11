@@ -40,7 +40,7 @@ services:
       - key: REFRESH_TOKEN_EXPIRE_HOURS
         value: "8"
       - key: ALLOWED_ORIGINS
-        value: https://forge-frontend.onrender.com,https://forge-phi-navy.vercel.app,http://localhost:3000
+        value: https://forge34.onrender.com,https://forge-frontend.onrender.com,https://forge-phi-navy.vercel.app,http://localhost:3000
       - key: ACCESS_PASSWORD
         sync: false
       - key: ACCESS_TOKEN_SECRET
