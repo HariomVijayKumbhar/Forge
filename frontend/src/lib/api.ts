@@ -1,6 +1,6 @@
 import { AgentRun, AuditLogEntry } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://forge12.onrender.com";
 
 // In-memory access token storage (XSS protected)
 let inMemoryAccessToken: string | null = null;

@@ -17,7 +17,7 @@ export function subscribeToAgentStream(
   let reconnectAttempts = 0;
   let reconnectTimer: NodeJS.Timeout | null = null;
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://forge12.onrender.com";
 
   function connect() {
     if (isClosed) return;

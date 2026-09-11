@@ -29,9 +29,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_SECRET: str = Field(default="dev-super-secret-refresh-token-key-change-in-prod-32chars", description="Secret for refresh cookies")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_HOURS: int = 8
-    ALLOWED_ORIGIN: str = Field(default="http://localhost:3000", description="Allowed CORS origin")
+    ALLOWED_ORIGIN: str = Field(default="https://forge34.onrender.com", description="Allowed CORS origin")
     ALLOWED_ORIGINS: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000,https://forge-phi-navy.vercel.app",
+        default="https://forge34.onrender.com,http://localhost:3000,http://127.0.0.1:3000,https://forge-phi-navy.vercel.app",
         description="Comma-separated allowed CORS origins",
     )
 
