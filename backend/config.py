@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     CLAUDE_MODEL: str = "claude-3-5-sonnet-20241022"
     GEMINI_MODEL: str = "gemini-2.0-flash"
     OPENROUTER_MODEL: str = "openai/gpt-4o-mini"
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # Agent Limits
     MAX_ITERATIONS: int = 25

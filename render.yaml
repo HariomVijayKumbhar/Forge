@@ -58,7 +58,7 @@ services:
       - key: OPENROUTER_MODEL
         value: openai/gpt-4o-mini
       - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: GEMINI_API_KEY

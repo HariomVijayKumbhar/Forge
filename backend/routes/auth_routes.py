@@ -290,12 +290,13 @@ async def refresh_access_token(
 
     payload = verify_refresh_token(refresh_cookie)
     old_jti = payload.get("jti")
+    subject = payload.get("sub", "admin")
 
     if old_jti:
         revoke_token(old_jti)
 
-    access_token = create_access_token()
-    new_refresh_token, new_jti = create_refresh_token()
+    access_token = create_access_token(subject=subject)
+    new_refresh_token, new_jti = create_refresh_token(subject=subject)
     new_csrf_token = generate_csrf_token()
 
     response.set_cookie(
